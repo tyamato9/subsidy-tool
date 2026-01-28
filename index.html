@@ -3,95 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>補助金診断レポート生成システム</title>
+    <title>補助金・助成金診断システム</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        body { background-color: #f8f9fa; font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif; }
-        .container { max-width: 900px; margin-top: 30px; }
-        #report-preview { background: white; padding: 40px; border: 1px solid #ddd; display: none; margin-top: 20px; }
-        .result-value { font-size: 1.5rem; color: #d9534f; font-weight: bold; }
-        .advice-box { background-color: #e9ecef; padding: 15px; border-left: 5px solid #0d6efd; margin: 15px 0; }
+        body { background-color: #f4f7f9; font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif; }
+        .container { max-width: 900px; margin-top: 30px; margin-bottom: 50px; }
+        #report-preview { background: white; padding: 50px; border: 1px solid #ddd; display: none; margin-top: 20px; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+        .result-value { font-size: 1.8rem; color: #d9534f; font-weight: bold; border-bottom: 2px solid #d9534f; padding-bottom: 5px; }
+        .advice-box { background-color: #f8f9fa; padding: 20px; border-left: 6px solid #007bff; margin: 20px 0; line-height: 1.8; }
+        .table-header { background-color: #004085; color: white; }
         @media print { .no-print { display: none; } }
     </style>
 </head>
 <body>
 
 <div class="container no-print">
-    <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">顧客情報入力フォーム</h5>
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white text-center">
+            <h4 class="mb-0">補助金レポート自動生成フォーム</h4>
         </div>
-        <div class="card-body">
+        <div class="card-body p-4">
             <form id="subsidy-form">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label">従業員数</label>
-                        <input type="number" id="emp_count" class="form-control" value="10" required>
+                        <label class="form-label font-weight-bold">従業員数</label>
+                        <div class="input-group">
+                            <input type="number" id="emp_count" class="form-control" value="10">
+                            <span class="input-group-text">名</span>
+                        </div>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">所在地</label>
-                        <input type="text" id="location" class="form-control" value="東京都品川区" required>
+                        <label class="form-label font-weight-bold">所在地</label>
+                        <input type="text" id="location" class="form-control" value="東京都品川区">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">資本金（万円）</label>
-                        <input type="number" id="capital" class="form-control" value="100" required>
+                        <label class="form-label font-weight-bold">資本金</label>
+                        <div class="input-group">
+                            <input type="number" id="capital" class="form-control" value="100">
+                            <span class="input-group-text">万円</span>
+                        </div>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">業種</label>
+                        <label class="form-label font-weight-bold">業種</label>
                         <select id="industry" class="form-select">
                             <option value="情報通信業">情報通信業</option>
                             <option value="製造業">製造業</option>
                             <option value="小売・卸売業">小売・卸売業</option>
                             <option value="サービス業">サービス業</option>
+                            <option value="その他">その他</option>
                         </select>
                     </div>
                 </div>
-                <button type="button" onclick="generateReport()" class="btn btn-success mt-4 w-100">レポートを生成する</button>
+                <button type="button" onclick="generateReport()" class="btn btn-primary mt-4 w-100 btn-lg">診断レポートを作成する</button>
             </form>
         </div>
     </div>
 </div>
 
 <div id="report-preview" class="container">
-    <div class="text-center">
-        <h2 class="mb-4">補助金・助成金活用診断レポート</h2>
-        <p class="text-end">作成日: 2026年1月28日</p>
+    <div class="row">
+        <div class="col-8">
+            <h2 class="text-primary">補助金・助成金 診断レポート</h2>
+        </div>
+        <div class="col-4 text-end">
+            <p id="current-date"></p>
+        </div>
     </div>
     <hr>
     
-    <h4>1. 顧客情報（診断対象）</h4>
-    <table class="table table-bordered">
-        <tr><th width="30%">従業員数</th><td id="view_emp"></td></tr>
-        <tr><th>所在地</th><td id="view_loc"></td></tr>
-        <tr><th>資本金</th><td id="view_cap"></td></tr>
-        <tr><th>業種</th><td id="view_ind"></td></tr>
+    <h5 class="mt-4"><i class="bi bi-info-circle"></i> 1. 診断対象情報</h5>
+    <table class="table table-sm table-bordered mt-2">
+        <tr><th class="table-light" width="25%">従業員数</th><td id="view_emp"></td><th class="table-light" width="25%">所在地</th><td id="view_loc"></td></tr>
+        <tr><th class="table-light">資本金</th><td id="view_cap"></td><th class="table-light">業種</th><td id="view_ind"></td></tr>
     </table>
 
-    <h4 class="mt-4">2. 受け取れる年間想定額</h4>
-    <div class="text-center p-3 border border-danger">
-        <span class="result-value" id="view_amount"></span>
+    <h5 class="mt-5 text-danger">2. 受給想定額（年間）</h5>
+    <div class="text-center my-3 p-4 bg-light border border-danger rounded">
+        <span class="result-value" id="view_amount">最大 550万円 〜 1,200万円</span>
+        <p class="mt-2 mb-0 text-muted">※投資計画および採用計画により変動します</p>
     </div>
 
-    <h4 class="mt-4">3. 専門家の見解・アドバイス</h4>
+    <h5 class="mt-5 text-primary">3. 専門家のアドバイス</h5>
     <div class="advice-box" id="view_advice"></div>
 
-    <h4 class="mt-4">4. 活用可能性が高い補助金リスト</h4>
-    <table class="table table-striped mt-2">
-        <thead class="table-dark">
+    <h5 class="mt-5 text-primary">4. 推奨する補助金・助成金リスト</h5>
+    <table class="table table-hover mt-3 border">
+        <thead class="table-header text-center">
             <tr>
-                <th>制度名称</th>
+                <th width="30%">制度名称</th>
                 <th>概要</th>
-                <th>補助上限額</th>
+                <th width="20%">補助上限額</th>
             </tr>
         </thead>
         <tbody id="list_body">
             </tbody>
     </table>
 
+    <div class="mt-5 p-3 bg-light text-muted small">
+        ※本レポートは入力された情報を元に簡易診断を行ったものであり、受給を保証するものではありません。詳細な要件確認は専門家へご相談ください。
+    </div>
+
     <div class="text-center mt-5 no-print">
-        <button onclick="downloadPDF()" class="btn btn-danger btn-lg">PDFとして保存・出力</button>
+        <button onclick="downloadPDF()" class="btn btn-danger btn-lg px-5">このレポートをPDFで出力する</button>
     </div>
 </div>
 
@@ -102,34 +117,50 @@
         const cap = document.getElementById('capital').value;
         const ind = document.getElementById('industry').value;
 
-        // 表示に反映
         document.getElementById('view_emp').innerText = emp + " 名";
         document.getElementById('view_loc').innerText = loc;
         document.getElementById('view_cap').innerText = cap + " 万円";
         document.getElementById('view_ind').innerText = ind;
+        document.getElementById('current-date').innerText = "診断日: " + new Date().toLocaleDateString();
 
-        // 金額とアドバイスのロジック
-        let amount = "500万円 〜 1,000万円";
-        let advice = "";
-        let listHtml = "";
+        // 共通のリスト（どの業種でも表示）
+        let listItems = [
+            { name: "IT導入補助金", desc: "ソフト・クラウド導入による業務効率化", price: "最大450万円" },
+            { name: "キャリアアップ助成金", desc: "正社員化・処遇改善への支援", price: "80万円/人" }
+        ];
 
-        if(ind === "情報通信業") {
-            advice = `<strong>IT投資の絶好のタイミングです。</strong><br>
-                      ${loc}でのIT事業は、最新設備の導入やソフトウェア開発において、国と地方自治体の両方から支援を受けられる可能性が非常に高いです。
-                      特に資本金${cap}万円という規模感は、中小企業支援の枠組みを最大限に活用できます。`;
-            listHtml = `
-                <tr><td>IT導入補助金</td><td>ソフトウェア・クラウド導入</td><td>最大450万円</td></tr>
-                <tr><td>ものづくり補助金</td><td>革新的なシステム開発</td><td>最大1,250万円</td></tr>
-                <tr><td>キャリアアップ助成金</td><td>正社員化による人材定着</td><td>80万円/人</td></tr>
-            `;
+        // 業種別の追加
+        if(ind === "製造業" || ind === "情報通信業") {
+            listItems.push({ name: "ものづくり補助金", desc: "革新的な製品開発・設備投資", price: "最大1,250万円" });
+        } else {
+            listItems.push({ name: "事業再構築補助金", desc: "新分野展開や業態転換の支援", price: "最大2,000万円〜" });
         }
 
-        document.getElementById('view_amount').innerText = amount;
-        document.getElementById('view_advice').innerHTML = advice;
-        document.getElementById('list_body').innerHTML = listHtml;
+        // 地域別の追加（品川区の場合）
+        if(loc.includes("品川")) {
+            listItems.push({ name: "品川区：新製品・新技術開発", desc: "区内中小企業の開発費用の助成", price: "最大100万円" });
+        }
 
+        // リスト表示を生成
+        let html = "";
+        listItems.forEach(item => {
+            html += `<tr><td class="fw-bold">${item.name}</td><td>${item.desc}</td><td class="text-center text-danger fw-bold">${item.price}</td></tr>`;
+        });
+        document.getElementById('list_body').innerHTML = html;
+
+        // アドバイス生成
+        let adviceText = `
+            貴社（${ind}）において、現在活用できる可能性が高い制度を抽出しました。<br>
+            特に<strong>従業員${emp}名</strong>という規模は、多くの中小企業向け助成金で「最も採択されやすい層」に該当します。
+        `;
+        if(loc.includes("品川")) {
+            adviceText += `<br>また、<strong>${loc}</strong>の独自支援策も併用することで、国からの補助金＋自治体の助成という「二階建て」の資金調達が狙える好条件です。`;
+        }
+        document.getElementById('view_advice').innerHTML = adviceText;
+
+        // 表示
         document.getElementById('report-preview').style.display = 'block';
-        window.scrollTo(0, document.getElementById('report-preview').offsetTop);
+        window.scrollTo({ top: document.getElementById('report-preview').offsetTop, behavior: 'smooth' });
     }
 
     async function downloadPDF() {
@@ -137,12 +168,9 @@
         const element = document.getElementById('report-preview');
         const canvas = await html2canvas(element, { scale: 2 });
         const imgData = canvas.toDataURL('image/png');
-        
         const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgProps = pdf.getImageProperties(imgData);
         const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
         pdf.save("補助金診断レポート.pdf");
     }
